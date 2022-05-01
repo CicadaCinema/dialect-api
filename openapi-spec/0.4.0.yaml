@@ -1,0 +1,142 @@
+openapi: 3.0.0
+servers: []
+info:
+  description: This is the API for Dialect
+  version: 0.4.0
+  title: Dialect API
+  license:
+    name: GNU General Public License 3.0
+    url: 'https://www.gnu.org/licenses/gpl-3.0.en.html'
+paths:
+  /api/verify:
+    get:
+      summary: mandatory step before posting
+      description: Clients must call this endpoint before posting. The response informs the client whether a captcha header is required for their next post.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  captchaRequired:
+                    type: boolean
+              example:
+                captchaRequired: false
+        '400':
+          description: bad request
+  /api/post:
+    post:
+      summary: make a new post and retrieve a random post to be viewed
+      description: Clients can only post after having performed verification.
+      parameters:
+        - in: header
+          name: captcha-token
+          description: client-side captcha response token (only sometimes required)
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PostItem'
+                example:
+                  - postContent: "Did you know that the human body is made up of over 70 percent water? I think that's pretty cool."
+                    path: "/233"
+                    id: 233
+                  - postContent: "No, I didn't know that. How interesting!"
+                    path: "/233/279"
+                    id: 279
+                  - postContent: "Of course I knew that..."
+                    path: "/233/284"
+                    id: 284
+                  - postContent: "No need to be rude!"
+                    path: "/233/284/337"
+                    id: 337
+                  - postContent: "I wasn't being rude!"
+                    path: "/233/284/337/365"
+                    id: 365
+                  - postContent: "Lame fact."
+                    path: "/233/370"
+                    id: 370
+        '400':
+          description: bad request
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - postContent
+              properties:
+                postContent:
+                  description: content of the new post to be made
+                  type: string
+                replyId:
+                  description: id of the post to reply to
+                  type: integer
+            examples:
+              Creating a new post:
+                value:
+                  postContent: "What a beautiful day!"
+              Replying to an existing post:
+                value:
+                  postContent: "I disagree. You can easily disprove this."
+                  replyId: 184
+  /api/vote:
+    post:
+      description: Votes on a post
+      responses:
+        '200':
+          description: OK
+        '400':
+          description: bad request
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - postId
+                - voteAction
+              properties:
+                postId:
+                  description: id of the post to vote on
+                  type: integer
+                voteAction:
+                  description: like - true; dislike - false
+                  type: boolean
+            examples:
+              Liking a post:
+                value:
+                  postId: 145
+                  voteAction: true
+              Disliking a post:
+                value:
+                  postId: 171
+                  voteAction: false
+components:
+  schemas:
+    PostItem:
+      type: object
+      required:
+        - postContent
+        - path
+        - id
+      properties:
+        postContent:
+          type: string
+        path:
+          type: string
+        id:
+          type: integer
+      example:
+        postContent: "Did you know that the human body is made up of over 70 percent water? I think that's pretty cool."
+        path: "/233"
+        id: 233
